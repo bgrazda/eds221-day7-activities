@@ -1,0 +1,46 @@
+---
+title: "EDS 221 EOD activity day 7"
+format: html
+editor: visual
+---
+```{r}
+library(tidyverse)
+library(lubridate)
+library(here)
+library(janitor)
+```
+
+```{r}
+bird_observations <- read_csv(here("data", "knb-lter-cap.256.9", "52_pp52_birds_1.csv"))
+sites <- read_csv(here("data", "knb-lter-cap.256.9", "52_pp52_sites_1.csv"))
+surveys <- read_csv(here("data", "knb-lter-cap.256.9", "52_pp52_surveys_1.csv"))
+taxalist <- read_csv(here("data", "knb-lter-cap.256.9", "52_pp52_taxalist_1.csv"))
+
+birds_subset <- bird_observations |> 
+  filter(species_id %in% c("BHCO", "RWBL") & site_id %in% c("LI-W", "NU-C")) 
+
+birds_left <- birds_subset %>% left_join(sites, by = "site_id") |> 
+ left_join(taxalist, by = "species_id")
+
+birds_full <- birds_subset |> 
+  full_join(sites)
+
+bird_observations <- bird_observations |> 
+  rename(bird_obs_notes = notes) 
+
+birds_full <- bird_observations |> 
+  full_join(sites) |> 
+  full_join(surveys) |> 
+  full_join(taxalist) |> 
+  select(survey_date, common_name, park_name, bird_count) |> 
+  mutate(survey_month = as_factor(month(survey_date))) |> 
+  relocate(survey_month, .after = survey_date)
+
+birds_summary <- birds_full |> 
+  group_by(park_name, survey_month) |> 
+  summarise(total = n()) |> 
+  filter(park_name %in% c("Lindo", "Orme", "Palomino", "Sonrisa")) 
+
+```
+
+
